@@ -17,6 +17,22 @@
         overflow: hidden;
       }
 
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #e0e0e0;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: white;
+      }
+
       #page {
         display: flex;
         width: 100%;
@@ -26,20 +42,33 @@
       #navbar {
         width: 240px;
         height: 100%;
-        border-right: 1px solid white;
+        background: #2a2c32;
       }
 
       #navbar .link,
       #navbar .active-link {
-        border-left-width: 8px;
-        border-left-style: solid;
-        border-left-color: transparent;
         padding: 8px;
         cursor: pointer;
+        color: #b3b3b3;
+        display: flex;
+        align-items: center;
       }
 
       #navbar .active-link {
-        border-left-color: white;
+        color: white;
+      }
+
+      #navbar .indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 4px 5px;
+        background: transparent;
+        display: inline-block;
+        margin-right: 8px;
+      }
+
+      #navbar .active-link .indicator {
+        background: #45cfae;
       }
 
       #wrapper {
@@ -51,7 +80,7 @@
 
       #actionbar {
         height: 46px;
-        border-bottom: 1px solid white;
+        background: #2a2c32;
         display: "flex";
       }
 
@@ -61,6 +90,11 @@
         height: 100%;
         display: inline-flex;
         align-items: center;
+        color: #b3b3b3;
+      }
+
+      #actionbar > .button:hover {
+        color: white;
       }
 
       #output {
@@ -83,7 +117,10 @@
     <div id="page">
       <div id="navbar">
         {{ #links }}
-        <div class="link" id="link-{{ name }}" onclick="connect('{{ name }}')">{{ name }}</div>
+        <div class="link" id="link-{{ name }}" onclick="connect('{{ name }}')">
+          <div class="indicator"></div>
+          {{ name }}
+        </div>
         {{ /links }}
       </div>
       <div id="wrapper">
