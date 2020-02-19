@@ -1,10 +1,10 @@
 {
   "name": "@backslashbuild/conductor",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Runs tasks and stuff.",
-  "main": "index.js",
+  "main": "conductor.js",
   "bin": {
-    "conductor": "./index.js"
+    "conductor": "./conductor.js"
   },
   "author": "Backslash Build Ltd",
   "dependencies": {
