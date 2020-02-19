@@ -1,6 +1,6 @@
 {
-  "name": "@backslashbuild/conductor",
-  "version": "1.2.1",
+  "name": "conductor",
+  "version": "1.2.2",
   "description": "Runs tasks and stuff.",
   "main": "conductor.js",
   "bin": {

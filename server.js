@@ -54,7 +54,7 @@ module.exports = function(configs, port = 0) {
     };
     res.writeHead(200, headers);
 
-    res.write(`event: clear\n\n`);
+    res.write(`\n\nevent: clear\ndata: null\n\n`);
     lines[name] && lines[name].forEach(l => res.write(`event: line\ndata: ${l}\n\n`));
 
     const clientId = Date.now();
@@ -149,4 +149,14 @@ module.exports = function(configs, port = 0) {
   Object.keys(configs).map(name => {
     startProcess(name);
   });
+
+  // keep the connections alive.
+  setInterval(() => {
+    Object.keys(clients).map(key =>
+      clients[key].forEach(c => {
+        c.res.write("event: ping\ndata: null\n\n");
+        c.res.flush();
+      })
+    );
+  }, 60 * 1000);
 };
