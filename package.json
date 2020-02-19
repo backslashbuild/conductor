@@ -1,0 +1,20 @@
+{
+  "name": "@backslashbuild/conductor",
+  "version": "1.0.0",
+  "description": "Runs tasks and stuff.",
+  "main": "index.js",
+  "bin": {
+    "conductor": "./index.js"
+  },
+  "author": "Backslash Build Ltd",
+  "dependencies": {
+    "ansi-to-html": "^0.6.14",
+    "body-parser": "^1.19.0",
+    "colors": "^1.4.0",
+    "commander": "^4.1.1",
+    "cors": "^2.8.5",
+    "cross-spawn": "^7.0.1",
+    "express": "^4.17.1",
+    "mustache-express": "^1.3.0"
+  }
+}
