@@ -81,7 +81,7 @@
       #actionbar {
         height: 46px;
         background: #2a2c32;
-        display: "flex";
+        display: flex;
       }
 
       #actionbar > .button {
@@ -95,6 +95,22 @@
 
       #actionbar > .button:hover {
         color: white;
+      }
+
+      #command,
+      #directory {
+        padding: 10px;
+        height: 100%;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      #command {
+        color: #b267e6;
+      }
+
+      #directory {
+        color: #e5cd52;
       }
 
       #output {
@@ -127,6 +143,8 @@
         <div id="actionbar">
           <div class="button" onclick="restart()">Restart command</div>
           <div class="button" onclick="stop()">Stop command</div>
+          <div id="directory"></div>
+          <div id="command"></div>
         </div>
         <div id="output"></div>
       </div>
@@ -135,6 +153,8 @@
       var currentName = null;
       var eventSource = null;
       var ouputElement = document.getElementById("output");
+      var commandElement = document.getElementById("command");
+      var directoryElement = document.getElementById("directory");
 
       function restart() {
         if (!currentName) return;
@@ -150,6 +170,8 @@
         if (eventSource) {
           eventSource.close();
           ouputElement.innerHTML = "";
+          commandElement.innerHTML = "";
+          directoryElement.innerHTML = "";
         }
 
         currentName = name;
@@ -167,6 +189,14 @@
           div.innerHTML = line;
           ouputElement.append(div);
           ouputElement.scrollTo(0, ouputElement.scrollHeight);
+        });
+
+        eventSource.addEventListener("command", event => {
+          commandElement.innerHTML = event.data;
+        });
+
+        eventSource.addEventListener("directory", event => {
+          directoryElement.innerHTML = event.data;
         });
 
         eventSource.addEventListener("clear", event => {

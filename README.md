@@ -15,7 +15,10 @@ example config:
   "test-script": {
     "command": "node",
     "args": ["test.js"],
-    "cwd": "./path/to/script"
+    "cwd": "./path/to/script",
+    "env": {
+      "MY_ENVIRONMENT_VARIABLE": "TEST_VALUE"
+    }
   }
 }
 ```

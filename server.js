@@ -1,9 +1,11 @@
+const path = require("path");
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const spawn = require("cross-spawn");
 const Converter = require("ansi-to-html");
-var mustacheExpress = require("mustache-express");
+const mustacheExpress = require("mustache-express");
+const mustache = require("mustache");
 
 const ansiToHtml = new Converter({
   fg: "#fafafc",
@@ -55,6 +57,16 @@ module.exports = function(configs, port = 0) {
     res.writeHead(200, headers);
 
     res.write(`\n\nevent: clear\ndata: null\n\n`);
+
+    const config = configs[name];
+    const args = (config.args || []).map(arg =>
+      mustache.render(arg, {
+        cwd: path.resolve(config.cwd)
+      })
+    );
+
+    res.write(`event: command\ndata: ${[config.command].concat(args).join(" ")}\n\n`);
+    res.write(`event: directory\ndata: ${path.resolve(config.cwd)}\n\n`);
     lines[name] && lines[name].forEach(l => res.write(`event: line\ndata: ${l}\n\n`));
 
     const clientId = Date.now();
@@ -91,10 +103,7 @@ module.exports = function(configs, port = 0) {
     }
 
     if (processes[name]) {
-      write(name, "stopping...");
-      processes[name].kill("SIGINT");
-      write(name, "stopped.");
-      processes[name] = null;
+      stopProcess(name);
     } else {
       write(name, "cannot stop.");
     }
@@ -106,7 +115,7 @@ module.exports = function(configs, port = 0) {
     res.render("index.html", { links: Object.keys(configs).map(name => ({ name })), port });
   });
 
-  const listener = app.listen(port, () => console.log(`Running command runner on ${listener.address().port}`));
+  const listener = app.listen(port, () => console.log(`Running conductor on http://localhost:${listener.address().port}`));
   port = listener.address().port;
   spawn("chrome.exe", [`--app=http://localhost:${listener.address().port}`], { cwd: "C:\\Program Files (x86)\\Google\\Chrome\\Application", detached: true });
 
@@ -121,17 +130,36 @@ module.exports = function(configs, port = 0) {
       });
   }
 
-  function startProcess(name) {
+  function stopProcess(name) {
     if (processes[name]) {
       write(name, "stopping...");
-      processes[name].kill();
-      write(name, "stopped.");
+      const p = processes[name];
+
+      p.on("exit", () => {
+        processes[name] = null;
+      });
+
+      p.kill("SIGKILL");
+    }
+  }
+
+  function startProcess(name) {
+    if (processes[name]) {
+      stopProcess(name);
     }
 
     write(name, "starting...");
 
     const config = configs[name];
-    const p = spawn(config.command, config.args, { cwd: config.cwd });
+    const p = spawn(
+      config.command,
+      (config.args || []).map(arg =>
+        mustache.render(arg, {
+          cwd: path.resolve(config.cwd)
+        })
+      ),
+      { cwd: config.cwd, env: config.env }
+    );
 
     p.stdout.on("data", data => {
       const line = ansiToHtml.toHtml(data.toString("utf8"));
@@ -141,6 +169,18 @@ module.exports = function(configs, port = 0) {
     p.stderr.on("data", data => {
       const line = ansiToHtml.toHtml(data.toString("utf8"));
       write(name, line);
+    });
+
+    p.on("error", err => {
+      write(name, `Error: ${err}.`);
+    });
+
+    p.on("close", code => {
+      write(name, `process closed all stdio with code ${code}`);
+    });
+
+    p.on("exit", code => {
+      write(name, `process exited with code ${code}`);
     });
 
     processes[name] = p;
