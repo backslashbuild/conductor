@@ -3,6 +3,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const spawn = require("cross-spawn");
+var kill = require("tree-kill");
 const Converter = require("ansi-to-html");
 const mustacheExpress = require("mustache-express");
 const mustache = require("mustache");
@@ -130,60 +131,71 @@ module.exports = function(configs, port = 0) {
       });
   }
 
-  function stopProcess(name) {
+  function stopProcess(name, callback) {
+    callback = callback || (() => {});
+
     if (processes[name]) {
       write(name, "stopping...");
       const p = processes[name];
 
-      p.on("exit", () => {
-        processes[name] = null;
+      kill(p.pid, error => {
+        if (error) {
+          write(name, "an error occured while stopping.");
+          callback(error);
+        } else {
+          processes[name] = null;
+          write(name, "stopped.");
+          callback();
+        }
       });
-
-      p.kill("SIGKILL");
+    } else {
+      callback();
     }
   }
 
   function startProcess(name) {
-    if (processes[name]) {
-      stopProcess(name);
-    }
+    stopProcess(name, stopError => {
+      if (stopError) {
+        return;
+      }
 
-    write(name, "starting...");
+      write(name, "starting...");
 
-    const config = configs[name];
-    const p = spawn(
-      config.command,
-      (config.args || []).map(arg =>
-        mustache.render(arg, {
-          cwd: path.resolve(config.cwd)
-        })
-      ),
-      { cwd: config.cwd, env: config.env }
-    );
+      const config = configs[name];
+      const p = spawn(
+        config.command,
+        (config.args || []).map(arg =>
+          mustache.render(arg, {
+            cwd: path.resolve(config.cwd)
+          })
+        ),
+        { cwd: config.cwd, env: config.env }
+      );
 
-    p.stdout.on("data", data => {
-      const line = ansiToHtml.toHtml(data.toString("utf8"));
-      write(name, line);
+      p.stdout.on("data", data => {
+        const line = ansiToHtml.toHtml(data.toString("utf8"));
+        write(name, line);
+      });
+
+      p.stderr.on("data", data => {
+        const line = ansiToHtml.toHtml(data.toString("utf8"));
+        write(name, line);
+      });
+
+      p.on("error", err => {
+        write(name, `Error: ${err}.`);
+      });
+
+      p.on("close", code => {
+        write(name, `process closed all stdio with code ${code}`);
+      });
+
+      p.on("exit", code => {
+        write(name, `process exited with code ${code}`);
+      });
+
+      processes[name] = p;
     });
-
-    p.stderr.on("data", data => {
-      const line = ansiToHtml.toHtml(data.toString("utf8"));
-      write(name, line);
-    });
-
-    p.on("error", err => {
-      write(name, `Error: ${err}.`);
-    });
-
-    p.on("close", code => {
-      write(name, `process closed all stdio with code ${code}`);
-    });
-
-    p.on("exit", code => {
-      write(name, `process exited with code ${code}`);
-    });
-
-    processes[name] = p;
   }
 
   Object.keys(configs).map(name => {

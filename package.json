@@ -1,6 +1,6 @@
 {
   "name": "conductor",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Runs tasks and stuff.",
   "main": "conductor.js",
   "bin": {
@@ -16,6 +16,7 @@
     "cross-spawn": "^7.0.1",
     "express": "^4.17.1",
     "mustache": "^4.0.0",
-    "mustache-express": "^1.3.0"
+    "mustache-express": "^1.3.0",
+    "tree-kill": "^1.2.2"
   }
 }
