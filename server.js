@@ -27,11 +27,11 @@ const ansiToHtml = new Converter({
     12: "#4FB4D8",
     13: "#9b37e2",
     14: "#00DCDC",
-    15: "#CBCDD2"
-  }
+    15: "#CBCDD2",
+  },
 });
 
-module.exports = function(configs, port = 0) {
+module.exports = function (configs, port = 0) {
   const processes = {};
   const clients = {};
   const lines = {};
@@ -53,34 +53,34 @@ module.exports = function(configs, port = 0) {
     const headers = {
       "Content-Type": "text/event-stream",
       Connection: "keep-alive",
-      "Cache-Control": "no-cache"
+      "Cache-Control": "no-cache",
     };
     res.writeHead(200, headers);
 
     res.write(`\n\nevent: clear\ndata: null\n\n`);
 
     const config = configs[name];
-    const args = (config.args || []).map(arg =>
+    const args = (config.args || []).map((arg) =>
       mustache.render(arg, {
-        cwd: path.resolve(config.cwd)
+        cwd: path.resolve(config.cwd),
       })
     );
 
     res.write(`event: command\ndata: ${[config.command].concat(args).join(" ")}\n\n`);
     res.write(`event: directory\ndata: ${path.resolve(config.cwd)}\n\n`);
-    lines[name] && lines[name].forEach(l => res.write(`event: line\ndata: ${l}\n\n`));
+    lines[name] && lines[name].forEach((l) => res.write(`event: line\ndata: ${l}\n\n`));
 
     const clientId = Date.now();
     const newClient = {
       id: clientId,
-      res
+      res,
     };
 
     clients[name] = clients[name] || [];
     clients[name].push(newClient);
 
     req.on("close", () => {
-      clients[name] = clients[name].filter(c => c.id !== clientId);
+      clients[name] = clients[name].filter((c) => c.id !== clientId);
     });
   });
 
@@ -113,7 +113,7 @@ module.exports = function(configs, port = 0) {
   });
 
   app.get("/", (req, res) => {
-    res.render("index.html", { links: Object.keys(configs).map(name => ({ name })), port });
+    res.render("index.html", { links: Object.keys(configs).map((name) => ({ name })), port });
   });
 
   const listener = app.listen(port, () => console.log(`Running conductor on http://localhost:${listener.address().port}`));
@@ -126,7 +126,7 @@ module.exports = function(configs, port = 0) {
     lines[name] = lines[name] || [];
     lines[name].push(jsonLine);
     clients[name] &&
-      clients[name].forEach(c => {
+      clients[name].forEach((c) => {
         c.res.write(`event: line\ndata: ${jsonLine}\n\n`);
       });
   }
@@ -138,7 +138,7 @@ module.exports = function(configs, port = 0) {
       write(name, "stopping...");
       const p = processes[name];
 
-      kill(p.pid, error => {
+      kill(p.pid, (error) => {
         if (error) {
           write(name, "an error occured while stopping.");
           callback(error);
@@ -154,9 +154,10 @@ module.exports = function(configs, port = 0) {
   }
 
   function startProcess(name) {
-    stopProcess(name, stopError => {
+    stopProcess(name, (stopError) => {
       if (stopError) {
-        return;
+        // clear it anyway
+        processes[name] = null;
       }
 
       write(name, "starting...");
@@ -164,33 +165,33 @@ module.exports = function(configs, port = 0) {
       const config = configs[name];
       const p = spawn(
         config.command,
-        (config.args || []).map(arg =>
+        (config.args || []).map((arg) =>
           mustache.render(arg, {
-            cwd: path.resolve(config.cwd)
+            cwd: path.resolve(config.cwd),
           })
         ),
         { cwd: config.cwd, env: config.env }
       );
 
-      p.stdout.on("data", data => {
+      p.stdout.on("data", (data) => {
         const line = ansiToHtml.toHtml(data.toString("utf8"));
         write(name, line);
       });
 
-      p.stderr.on("data", data => {
+      p.stderr.on("data", (data) => {
         const line = ansiToHtml.toHtml(data.toString("utf8"));
         write(name, line);
       });
 
-      p.on("error", err => {
+      p.on("error", (err) => {
         write(name, `Error: ${err}.`);
       });
 
-      p.on("close", code => {
+      p.on("close", (code) => {
         write(name, `process closed all stdio with code ${code}`);
       });
 
-      p.on("exit", code => {
+      p.on("exit", (code) => {
         write(name, `process exited with code ${code}`);
       });
 
@@ -198,16 +199,16 @@ module.exports = function(configs, port = 0) {
     });
   }
 
-  Object.keys(configs).map(name => {
+  Object.keys(configs).map((name) => {
     startProcess(name);
   });
 
   // keep the connections alive.
   setInterval(() => {
-    Object.keys(clients).map(key =>
-      clients[key].forEach(c => {
+    Object.keys(clients).map((key) =>
+      clients[key].forEach((c) => {
         c.res.write("event: ping\ndata: null\n\n");
-        c.res.flush();
+        c.res.flush && c.res.flush();
       })
     );
   }, 60 * 1000);
