@@ -66,9 +66,12 @@ module.exports = function (configs, port = 0) {
       })
     );
 
-    res.write(`event: command\ndata: ${[config.command].concat(args).join(" ")}\n\n`);
+    res.write(
+      `event: command\ndata: ${[config.command].concat(args).join(" ")}\n\n`
+    );
     res.write(`event: directory\ndata: ${path.resolve(config.cwd)}\n\n`);
-    lines[name] && lines[name].forEach((l) => res.write(`event: line\ndata: ${l}\n\n`));
+    lines[name] &&
+      lines[name].forEach((l) => res.write(`event: line\ndata: ${l}\n\n`));
 
     const clientId = Date.now();
     const newClient = {
@@ -113,12 +116,37 @@ module.exports = function (configs, port = 0) {
   });
 
   app.get("/", (req, res) => {
-    res.render("index.html", { links: Object.keys(configs).map((name) => ({ name })), port });
+    res.render("index.html", {
+      links: Object.keys(configs).map((name) => ({ name })),
+      port,
+    });
   });
 
-  const listener = app.listen(port, () => console.log(`Running conductor on http://localhost:${listener.address().port}`));
+  const listener = app.listen(port, () =>
+    console.log(
+      `Running conductor on http://localhost:${listener.address().port}`
+    )
+  );
   port = listener.address().port;
-  spawn("chrome.exe", [`--app=http://localhost:${listener.address().port}`], { cwd: "C:\\Program Files (x86)\\Google\\Chrome\\Application", detached: true });
+
+  try {
+    if (process.platform == "darwin") {
+      spawn("/usr/bin/open", [`http://localhost:${listener.address().port}`]);
+    }
+
+    if (process.platform == "win32") {
+      spawn(
+        "chrome.exe",
+        [`--app=http://localhost:${listener.address().port}`],
+        {
+          cwd: "C:\\Program Files (x86)\\Google\\Chrome\\Application",
+          detached: true,
+        }
+      );
+    }
+  } catch {
+    console.log("Unable to launch browser.");
+  }
 
   function write(name, line) {
     const jsonLine = JSON.stringify({ line });
