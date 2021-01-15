@@ -116,9 +116,14 @@ module.exports = function (configs, port = 0) {
     res.render("index.html", { links: Object.keys(configs).map((name) => ({ name })), port });
   });
 
-  const listener = app.listen(port, () => console.log(`Running conductor on http://localhost:${listener.address().port}`));
+  const listener = app.listen(port, () =>
+    console.log(`Running conductor on http://localhost:${listener.address().port}`)
+  );
   port = listener.address().port;
-  spawn("chrome.exe", [`--app=http://localhost:${listener.address().port}`], { cwd: "C:\\Program Files (x86)\\Google\\Chrome\\Application", detached: true });
+  spawn("chrome.exe", [`--app=http://localhost:${listener.address().port}`], {
+    cwd: configs.__chromeDir || "C:\\Program Files (x86)\\Google\\Chrome\\Application",
+    detached: true,
+  });
 
   function write(name, line) {
     const jsonLine = JSON.stringify({ line });
