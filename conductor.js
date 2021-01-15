@@ -21,16 +21,16 @@ program
     "-p, --port <port>",
     "The port to run the server on, if not set will be randomly selected."
   )
-  .option("-x, --no-browser <noBrowser>", "Don't automatically open the browser.")
+  .option("-x, --no-browser", "Don't automatically open the browser.")
   .action(async (configFile) => {
     try {
       const port = program.port;
-      const noBrowser = program.noBrowser;
+      const browser = program.browser;
       const configString = await readFile(configFile || "./conductor.json", {
         encoding: "utf8",
       }).catch(handleError);
       const config = JSON.parse(configString);
-      server(config, port, !Boolean(noBrowser));
+      server(config, port, browser);
     } catch (e) {
       return handleError(e);
     }
