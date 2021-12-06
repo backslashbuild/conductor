@@ -145,6 +145,9 @@ module.exports = function (configs, port = 0, openBrowser = true) {
     const jsonLine = JSON.stringify({ line });
 
     lines[name] = lines[name] || [];
+    if (lines[name].length === 1000) {
+      lines[name].shift();
+    }
     lines[name].push(jsonLine);
     clients[name] &&
       clients[name].forEach((c) => {
