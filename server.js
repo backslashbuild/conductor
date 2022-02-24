@@ -7,7 +7,7 @@ var kill = require("tree-kill");
 const Converter = require("ansi-to-html");
 const mustacheExpress = require("mustache-express");
 const mustache = require("mustache");
-const { existsSync } = require("fs");
+const { existsSync, readFileSync } = require("fs");
 
 const ansiToHtml = new Converter({
   fg: "#fafafc",
@@ -67,12 +67,9 @@ module.exports = function (configs, port = 0, openBrowser = true) {
       })
     );
 
-    res.write(
-      `event: command\ndata: ${[config.command].concat(args).join(" ")}\n\n`
-    );
+    res.write(`event: command\ndata: ${[config.command].concat(args).join(" ")}\n\n`);
     res.write(`event: directory\ndata: ${path.resolve(config.cwd)}\n\n`);
-    lines[name] &&
-      lines[name].forEach((l) => res.write(`event: line\ndata: ${l}\n\n`));
+    lines[name] && lines[name].forEach((l) => res.write(`event: line\ndata: ${l}\n\n`));
 
     const clientId = Date.now();
     const newClient = {
@@ -124,9 +121,7 @@ module.exports = function (configs, port = 0, openBrowser = true) {
   });
 
   const listener = app.listen(port, () =>
-    console.log(
-      `Running conductor on http://localhost:${listener.address().port}`
-    )
+    console.log(`Running conductor on http://localhost:${listener.address().port}`)
   );
   port = listener.address().port;
 
@@ -141,14 +136,10 @@ module.exports = function (configs, port = 0, openBrowser = true) {
           ? "C:\\Program Files\\Google\\Chrome\\Application"
           : "C:\\Program Files (x86)\\Google\\Chrome\\Application";
 
-        spawn(
-          "chrome.exe",
-          [`--app=http://localhost:${listener.address().port}`],
-          {
-            cwd,
-            detached: true,
-          }
-        );
+        spawn("chrome.exe", [`--app=http://localhost:${listener.address().port}`], {
+          cwd,
+          detached: true,
+        });
       }
     } catch {
       console.log("Unable to launch browser.");
@@ -201,6 +192,18 @@ module.exports = function (configs, port = 0, openBrowser = true) {
       write(name, "starting...");
 
       const config = configs[name];
+      const env = {};
+
+      if (config.envFile && existsSync(path.resolve(config.envFile))) {
+        const fileContent = readFileSync(path.resolve(config.envFile));
+        const varsFromFile = require("dotenv").parse(fileContent);
+        Object.assign(env, varsFromFile);
+      }
+
+      if (config.env) {
+        Object.assign(env, config.env);
+      }
+
       const p = spawn(
         config.command,
         (config.args || []).map((arg) =>
@@ -208,7 +211,7 @@ module.exports = function (configs, port = 0, openBrowser = true) {
             cwd: path.resolve(config.cwd),
           })
         ),
-        { cwd: config.cwd, env: config.env }
+        { cwd: config.cwd, env }
       );
 
       p.stdout.on("data", (data) => {
