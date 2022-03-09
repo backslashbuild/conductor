@@ -1,6 +1,6 @@
 {
   "name": "conductor",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Runs tasks and stuff.",
   "main": "conductor.js",
   "bin": {

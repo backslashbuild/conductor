@@ -132,9 +132,12 @@ module.exports = function (configs, port = 0, openBrowser = true) {
       }
 
       if (process.platform == "win32") {
-        const cwd = existsSync("C:\\Program Files\\Google\\Chrome\\Application")
-          ? "C:\\Program Files\\Google\\Chrome\\Application"
-          : "C:\\Program Files (x86)\\Google\\Chrome\\Application";
+        const possibleChromeLocations = [
+          "C:\\Program Files\\Google\\Chrome\\Application",
+          "C:\\Program Files (x86)\\Google\\Chrome\\Application",
+          process.env.USERPROFILE + "\\AppData\\Local\\Google\\Chrome\\Application",
+        ];
+        const cwd = possibleChromeLocations.find((l) => existsSync(l));
 
         spawn("chrome.exe", [`--app=http://localhost:${listener.address().port}`], {
           cwd,
@@ -192,7 +195,7 @@ module.exports = function (configs, port = 0, openBrowser = true) {
       write(name, "starting...");
 
       const config = configs[name];
-      const env = {};
+      const env = Object.assign({}, process.env);
 
       if (config.envFile && existsSync(path.resolve(config.envFile))) {
         const fileContent = readFileSync(path.resolve(config.envFile));
