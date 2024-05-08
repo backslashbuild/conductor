@@ -15,21 +15,48 @@ const handleError = (error) => {
 
 program
   .version(require("./package.json").version)
-  .usage("[options] [config file]")
-  .arguments("[config file]", "The config file, defaults to ./conductor.json")
+  .usage("[options] [config files...]")
+  .arguments(
+    "[configFiles...]",
+    "The config file, defaults to ./conductor.json"
+  )
   .option(
     "-p, --port <port>",
     "The port to run the server on, if not set will be randomly selected."
   )
   .option("-x, --no-browser", "Don't automatically open the browser.")
-  .action(async (configFile) => {
+  .action(async (configFiles) => {
     try {
       const port = program.port;
       const browser = program.browser;
-      const configString = await readFile(configFile || "./conductor.json", {
-        encoding: "utf8",
-      }).catch(handleError);
-      const config = JSON.parse(configString);
+
+      let config = {};
+
+      if (configFiles?.length === 0) {
+        const configString = await readFile("./conductor.json", {
+          encoding: "utf8",
+        }).catch(handleError);
+        config = JSON.parse(configString);
+      } else {
+        // use reduce to wait for one file to load before loading the next
+        const promise = configFiles.reduce(
+          async (previousPromise, configFile) => {
+            await previousPromise;
+
+            const configString = await readFile(configFile, {
+              encoding: "utf8",
+            }).catch(handleError);
+
+            const fileConfig = JSON.parse(configString);
+            Object.assign(config, fileConfig);
+
+            return Promise.resolve();
+          },
+          Promise.resolve()
+        );
+        await promise;
+      }
+
       server(config, port, browser);
     } catch (e) {
       return handleError(e);
